@@ -1,0 +1,52 @@
+# render.yaml — Render.com deployment configuration
+# Deploy: connect your GitHub repo to Render and it auto-detects this file.
+
+services:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: cdss-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cdss-postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://cdss-frontend.onrender.com
+      - key: LLM_PROVIDER
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false   # Set manually in Render dashboard
+      - key: HOSPITAL_NAME
+        value: "General Hospital"
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: cdss-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://cdss-backend.onrender.com
+
+databases:
+  - name: cdss-postgres
+    plan: free
+    databaseName: cdss_db
+    user: cdss_user
