@@ -128,22 +128,14 @@ class DenseNet121Engine(InferenceEngine):
 
     def _load_model(self, model_path: Path, num_classes: int) -> nn.Module:
         """Load DenseNet121, replace classifier head, load weights."""
-        model = models.densenet121(weights=None)
-        # Replace classifier to match the disease class count
-        in_features = model.classifier.in_features
-        model.classifier = nn.Linear(in_features, num_classes)
+        from ai.loaders.model_loader import extract_state_dict, load_model_file, remap_densenet_state_dict, build_densenet121_model_from_state_dict
 
-        checkpoint = torch.load(model_path, map_location=self._device)
+        checkpoint = load_model_file(model_path)
+        state_dict = extract_state_dict(checkpoint)
+        normalized_state_dict = remap_densenet_state_dict(state_dict)
 
-        # Support both raw state_dict and wrapped checkpoint dicts
-        if isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-            state_dict = checkpoint["state_dict"]
-        elif isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-            state_dict = checkpoint["model_state_dict"]
-        else:
-            state_dict = checkpoint
-
-        model.load_state_dict(state_dict, strict=False)
+        model = build_densenet121_model_from_state_dict(normalized_state_dict, num_classes)
+        model.load_state_dict(normalized_state_dict, strict=False)
         return model.to(self._device)
 
     def _register_hooks(self) -> None:

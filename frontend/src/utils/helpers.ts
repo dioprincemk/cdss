@@ -78,12 +78,20 @@ export function interpretHeartRate(bpm: number): { label: string; color: string 
 export function extractErrorMessage(err: unknown): string {
   if (!err) return 'An unknown error occurred';
   const e = err as any;
-  return (
-    e?.response?.data?.detail ??
-    e?.response?.data?.message ??
-    e?.message ??
-    'Request failed'
-  );
+  const detail = e?.response?.data?.detail ?? e?.response?.data?.message;
+
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    // FastAPI validation errors are an array of objects with 'msg'
+    const parts = detail.map((d: any) => d?.msg ?? (typeof d === 'string' ? d : JSON.stringify(d)));
+    return parts.join('; ');
+  }
+  if (detail && typeof detail === 'object') {
+    // Try common fields
+    return detail.message ?? detail.detail ?? JSON.stringify(detail);
+  }
+
+  return e?.message ?? 'Request failed';
 }
 
 // ── Confidence colour ─────────────────────────────────────────────────────────

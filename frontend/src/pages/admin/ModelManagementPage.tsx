@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Upload, CheckCircle2, XCircle, Cpu, Power, PowerOff, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '@/utils/helpers';
 import { modelApi } from '@/services/api';
 import type { AIModel } from '@/types';
 import { format } from 'date-fns';
@@ -28,7 +29,7 @@ export default function ModelManagementPage() {
     fd.append('version', form.version);
     fd.append('description', form.description);
     fd.append('architecture', form.architecture);
-    fd.append('input_size', form.input_size);
+    fd.append('input_size', String(parseInt(form.input_size)));
     const classes = JSON.stringify(form.disease_classes.split(',').map(s => s.trim()).filter(Boolean));
     fd.append('disease_classes', classes);
 
@@ -39,7 +40,7 @@ export default function ModelManagementPage() {
       if (fileRef.current) fileRef.current.value = '';
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Upload failed');
+      toast.error(extractErrorMessage(err));
     } finally {
       setUploading(false);
     }
@@ -51,7 +52,7 @@ export default function ModelManagementPage() {
       toast.success('Model activated');
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Activation failed');
+      toast.error(extractErrorMessage(err));
     }
   };
 
@@ -61,7 +62,7 @@ export default function ModelManagementPage() {
       toast.success('Model deactivated');
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Failed');
+      toast.error(extractErrorMessage(err));
     }
   };
 

@@ -1,6 +1,7 @@
 // hooks/useApi.ts — Generic data fetching hook with loading/error state
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { extractErrorMessage } from '@/utils/helpers';
 
 interface UseApiState<T> {
   data: T | null;
@@ -36,7 +37,7 @@ export function useApi<T>(
       }
     } catch (err: any) {
       if (mountedRef.current && id === countRef.current) {
-        setError(err?.response?.data?.detail ?? err?.message ?? 'Request failed');
+        setError(extractErrorMessage(err));
       }
     } finally {
       if (mountedRef.current && id === countRef.current) {

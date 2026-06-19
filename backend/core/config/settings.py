@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     MODELS_DIR: Path = Path("./models")
     REPORTS_DIR: Path = Path("./reports")
     GRADCAM_DIR: Path = Path("./gradcam")
-    MAX_UPLOAD_SIZE_MB: int = 10
+    MAX_UPLOAD_SIZE_MB: int = 100
 
     # ── LLM Provider ──────────────────────────────────────────────────────────
     LLM_PROVIDER: str = "mock"          # openai | local | mock

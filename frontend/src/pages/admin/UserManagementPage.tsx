@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { UserCog, Shield, Stethoscope, ToggleLeft, ToggleRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '@/utils/helpers';
 import { userApi } from '@/services/api';
 import type { User } from '@/types';
 import { format } from 'date-fns';
@@ -26,7 +27,7 @@ export default function UserManagementPage() {
       }
       load();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Failed');
+      toast.error(extractErrorMessage(err));
     }
   };
 

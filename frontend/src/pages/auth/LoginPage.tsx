@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, Activity, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { extractErrorMessage } from '@/utils/helpers';
 
 const schema = z.object({
   email: z.string().email('Invalid email address'),
@@ -29,7 +30,7 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Login failed. Check your credentials.');
+      toast.error(extractErrorMessage(err));
     }
   };
 

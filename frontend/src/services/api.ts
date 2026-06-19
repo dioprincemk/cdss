@@ -16,6 +16,9 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (config.data instanceof FormData && config.headers) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 
@@ -100,7 +103,7 @@ export const assessmentApi = {
     const form = new FormData();
     form.append('file', file);
     return api.post(`/assessments/${assessmentId}/upload-xray`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
   },
 };
@@ -118,7 +121,9 @@ export const aiApi = {
 export const modelApi = {
   list: () => api.get('/models'),
   upload: (form: FormData) =>
-    api.post('/models/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    api.post('/models/upload', form, {
+      headers: { 'Content-Type': undefined },
+    }),
   activate: (id: string) => api.post(`/models/${id}/activate`),
   deactivate: (id: string) => api.post(`/models/${id}/deactivate`),
 };

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import { extractErrorMessage } from '@/utils/helpers';
 
 const schema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -34,7 +35,7 @@ export default function RegisterPage() {
       toast.success('Account created! Please sign in.');
       navigate('/login');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Registration failed.');
+      toast.error(extractErrorMessage(err));
     }
   };
 

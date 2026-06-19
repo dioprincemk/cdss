@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Check, ChevronRight, ChevronLeft, Upload, X, Loader2, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '@/utils/helpers';
 
 import { patientApi, assessmentApi, aiApi } from '@/services/api';
 import { useWorkflowStore } from '@/store/workflowStore';
@@ -92,7 +93,7 @@ export default function AssessmentPage() {
       toast.success('Patient registered');
       next();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Failed to save patient');
+      toast.error(extractErrorMessage(err));
     }
   });
 
@@ -104,7 +105,7 @@ export default function AssessmentPage() {
       toast.success(`Vitals recorded${res.data.bmi ? ` · BMI: ${res.data.bmi?.toFixed(1)}` : ''}`);
       next();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Failed to save vitals');
+      toast.error(extractErrorMessage(err));
     }
   });
 
@@ -126,7 +127,7 @@ export default function AssessmentPage() {
       toast.success('Clinical info saved');
       next();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Failed to save assessment');
+      toast.error(extractErrorMessage(err));
     }
   });
 
@@ -138,7 +139,7 @@ export default function AssessmentPage() {
       toast.success('X-ray uploaded');
       next();
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail ?? 'Upload failed');
+      toast.error(extractErrorMessage(err));
     }
   };
 
@@ -153,7 +154,7 @@ export default function AssessmentPage() {
       navigate(`/results/${res.data.prediction_id}`);
       wf.reset();
     } catch (err: any) {
-      const msg = err?.response?.data?.detail ?? 'AI analysis failed';
+      const msg = extractErrorMessage(err);
       setAnalysisError(msg);
       toast.error(msg);
     } finally {

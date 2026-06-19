@@ -10,9 +10,12 @@ from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
 
+import logging
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy import select
 
+from ai.loaders.model_loader import validate_densenet_model
 from ai.model_registry.registry import ModelRegistry, get_registry
 from auth.dependencies import CurrentAdmin, DBSession
 from core.config.settings import get_settings
@@ -23,38 +26,9 @@ from utils.audit import log_action
 settings = get_settings()
 router = APIRouter(prefix="/models", tags=["Model Management"])
 
+logger = logging.getLogger(__name__)
+
 ALLOWED_MODEL_EXT = {".pth", ".pkl"}
-
-
-def _validate_densenet_model(model_path: Path, expected_classes: int) -> tuple[bool, str]:
-    """
-    Attempt to load the model and verify DenseNet121 architecture + output classes.
-    Returns (is_valid, log_message).
-    """
-    try:
-        import torch
-        from torchvision import models
-        import torch.nn as nn
-
-        checkpoint = torch.load(model_path, map_location="cpu")
-        if isinstance(checkpoint, dict):
-            state_dict = checkpoint.get("state_dict") or checkpoint.get("model_state_dict") or checkpoint
-        else:
-            state_dict = checkpoint
-
-        # Build a reference model
-        model = models.densenet121(weights=None)
-        model.classifier = nn.Linear(model.classifier.in_features, expected_classes)
-
-        incompatible = model.load_state_dict(state_dict, strict=False)
-        missing = [k for k in incompatible.missing_keys if "classifier" not in k]
-
-        if len(missing) > 20:
-            return False, f"Model has too many unexpected missing keys ({len(missing)}). Architecture mismatch."
-
-        return True, f"Validation passed. {expected_classes} output classes confirmed."
-    except Exception as e:
-        return False, f"Validation failed: {str(e)}"
 
 
 @router.post("/upload", status_code=201)
@@ -68,7 +42,7 @@ async def upload_model(
     description: Optional[str] = Form(default=None),
     architecture: str = Form(default="DenseNet121"),
     disease_classes: str = Form(...),  # JSON array string: '["Normal","Pneumonia",...]'
-    input_size: int = Form(default=224),
+    input_size: str = Form(default="224"),
     file: UploadFile = File(...),
 ):
     """
@@ -77,24 +51,53 @@ async def upload_model(
     """
     import json
 
-    # Parse disease classes
+    logger.info("Received model upload request: name=%s version=%s filename=%s", name, version, getattr(file, 'filename', None))
+
+    # Parse disease classes. Accept either a JSON array string or a simple
+    # comma-separated list for robustness (frontend may send either).
     try:
         classes: List[str] = json.loads(disease_classes)
         if not isinstance(classes, list) or len(classes) < 2:
             raise ValueError
     except (ValueError, json.JSONDecodeError):
-        raise HTTPException(
-            status_code=400,
-            detail="disease_classes must be a valid JSON array with at least 2 classes, e.g., [\"Normal\",\"Pneumonia\"]"
-        )
+        # Fallback: try comma-separated values
+        try:
+            classes = [s.strip() for s in disease_classes.split(',') if s.strip()]
+            if len(classes) < 2:
+                raise ValueError
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "disease_classes must be a valid JSON array with at least 2 classes,"
+                    " or a comma-separated string like 'Normal,Pneumonia'"
+                ),
+            )
 
     # Validate file extension
     suffix = Path(file.filename).suffix.lower()
     if suffix not in ALLOWED_MODEL_EXT:
         raise HTTPException(status_code=400, detail=f"Allowed model formats: {ALLOWED_MODEL_EXT}")
 
-    # Save model file
-    content = await file.read()
+    # Ensure file is present and within size limits, then save
+    if not file or not getattr(file, 'filename', None):
+        raise HTTPException(status_code=400, detail="No model file provided")
+
+    try:
+        content = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read uploaded file: {e}")
+
+    # Enforce max upload size
+    if settings.max_upload_bytes and len(content) > settings.max_upload_bytes:
+        raise HTTPException(status_code=413, detail=f"Uploaded file exceeds maximum size of {settings.MAX_UPLOAD_SIZE_MB} MB")
+    # Parse and validate input_size (allow frontend to send empty string)
+    try:
+        input_size_int = int(str(input_size))
+        if input_size_int <= 0:
+            raise ValueError
+    except Exception:
+        raise HTTPException(status_code=400, detail="input_size must be a positive integer")
     checksum = hashlib.sha256(content).hexdigest()
     stored_name = f"model_{uuid.uuid4().hex[:12]}{suffix}"
     model_path = settings.MODELS_DIR / stored_name
@@ -113,7 +116,7 @@ async def upload_model(
         file_size_bytes=len(content),
         checksum_sha256=checksum,
         disease_classes=classes,
-        input_size=input_size,
+        input_size=input_size_int,
         is_active=False,
         is_validated=is_valid,
         validation_log=validation_log,
@@ -121,6 +124,7 @@ async def upload_model(
     )
     db.add(ai_model)
     await db.flush()
+    await db.commit()
     await log_action(db, current_user.id, "model.upload", "model", ai_model.id, request)
 
     return {
@@ -156,6 +160,7 @@ async def activate_model(
     # Activate this one
     model.is_active = True
     await db.flush()
+    await db.commit()
 
     # Load into registry
     await registry.load_model(
@@ -185,6 +190,7 @@ async def deactivate_model(
 
     model.is_active = False
     await db.flush()
+    await db.commit()
     await registry.unload()
     await log_action(db, current_user.id, "model.deactivate", "model", model.id, request)
     return {"message": "Model deactivated."}

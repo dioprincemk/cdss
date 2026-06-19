@@ -149,7 +149,20 @@ npm run dev
 3. Register as **Administrator** to unlock Model Management
 4. Upload a DenseNet121 `.pth` model file via **AI Models** → **Upload**
 5. Activate the model
-6. Start a **New Assessment**
+6. Backdoor to inject DL model into system
+
+```bash
+cd /workspaces/cdss/backend
+python import_model.py \
+  --path /path/to/model.pkl \
+  --name "DenseNet v1" \
+  --version "1.0.0" \
+  --description "Optional notes" \
+  --classes "Normal,Pneumonia,COVID-19,Tuberculosis" \
+  --input-size 224 \
+  --activate
+  ```
+7. Start a **New Assessment**
 
 ---
 
