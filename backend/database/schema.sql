@@ -58,10 +58,7 @@ CREATE TABLE patients (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     patient_id      VARCHAR(50) UNIQUE NOT NULL,  -- Hospital-assigned ID
     full_name       VARCHAR(255) NOT NULL,
-    date_of_birth   DATE NOT NULL,
-    age             INTEGER GENERATED ALWAYS AS (
-                        EXTRACT(YEAR FROM AGE(date_of_birth))::INTEGER
-                    ) STORED,
+    date_of_birth   DATE NOT NULL,         
     sex             VARCHAR(10) NOT NULL CHECK (sex IN ('male', 'female', 'other')),
     contact_phone   VARCHAR(20),
     contact_email   VARCHAR(255),
@@ -297,3 +294,11 @@ CREATE TRIGGER trg_assessments_updated_at
 CREATE TRIGGER trg_models_updated_at
     BEFORE UPDATE ON ai_models
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+
+-- Create a view that dynamically computes age whenever queried
+CREATE VIEW view_patients_with_age AS
+SELECT 
+    *,
+    EXTRACT(YEAR FROM AGE(date_of_birth))::INTEGER AS current_age
+FROM patients;

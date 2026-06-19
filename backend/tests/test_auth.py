@@ -63,6 +63,22 @@ async def test_register_weak_password(client: AsyncClient):
     assert response.status_code == 422   # Pydantic validation error
 
 
+@pytest.mark.anyio
+async def test_register_admin_success(client: AsyncClient):
+    payload = {
+        "email": "adminuser@hospital.com",
+        "password": "SecurePass1",
+        "full_name": "Admin User",
+        "role": "admin",
+    }
+    response = await client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["email"] == payload["email"]
+    assert data["role"] == "admin"
+    assert "id" in data
+
+
 # ── Login ─────────────────────────────────────────────────────────────────────
 @pytest.mark.anyio
 async def test_login_success(client: AsyncClient):

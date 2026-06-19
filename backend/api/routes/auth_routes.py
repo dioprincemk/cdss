@@ -29,7 +29,7 @@ async def register(data: RegisterRequest, db: DBSession, request: Request):
         id=user.id,
         email=user.email,
         full_name=user.full_name,
-        role=user.role.name if user.role else data.role,
+        role=data.role,
         medical_license=user.medical_license,
         department=user.department,
         is_active=user.is_active,

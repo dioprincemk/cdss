@@ -46,7 +46,7 @@ class AuthService:
             email=data.email.lower(),
             hashed_password=hash_password(data.password),
             full_name=data.full_name,
-            role_id=role.id,
+            role=role,
             medical_license=data.medical_license,
             department=data.department,
             is_verified=True,  # Auto-verify for academic demo; add email flow for production

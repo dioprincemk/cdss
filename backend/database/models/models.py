@@ -250,7 +250,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(100), nullable=False)
     resource: Mapped[Optional[str]] = mapped_column(String(100))
     resource_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
-    ip_address: Mapped[Optional[str]] = mapped_column(String(45))
+    ip_address: Mapped[Optional[str]] = mapped_column(INET, nullable=True)
     user_agent: Mapped[Optional[str]] = mapped_column(Text)
     details: Mapped[Optional[dict]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

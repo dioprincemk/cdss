@@ -1,0 +1,9 @@
+{
+  "name": "CDSS Project Environment",
+  "features": {
+    "ghcr.io/devcontainers/features/postgres:1": {
+      "version": "15" 
+    }
+  },
+  "postCreateCommand": "chmod +x setup_db.sh"
+}

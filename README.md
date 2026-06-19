@@ -72,6 +72,19 @@ chmod +x start.sh setup_db.sh
 ### 2. Database setup
 
 ```bash
+
+# 1. Update the package list
+sudo apt-get update
+
+# 2. Install both the postgres client AND the server manually
+sudo apt-get install -y postgresql postgresql-client
+
+# 3. Start the postgres service so your script can talk to it
+sudo service postgresql start
+
+# 2. Incase of Restart to apply any necessary change
+sudo service postgresql restart
+
 # Creates cdss_db, cdss_user, runs schema
 ./setup_db.sh
 ```
@@ -285,5 +298,6 @@ This system was developed as an undergraduate final year project in medical info
 ---
 
 *Built with FastAPI · React · PyTorch · PostgreSQL*
-#   c d s s  
+#   c d s s 
+ 
  

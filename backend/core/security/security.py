@@ -18,7 +18,7 @@ from core.config.settings import get_settings
 settings = get_settings()
 
 # ── Password Hashing ──────────────────────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 
 def hash_password(plain_password: str) -> str:
